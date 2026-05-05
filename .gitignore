@@ -26,8 +26,12 @@ logs/
 *.log
 *.sqlite*
 
-# Books (source documents - keep in repo for project completeness)
-# books/
+# Books (source documents)
+# Keep directory structure, but ignore large binary files
+books/**/*.pdf
+books/**/*.docx
+books/**/*.pptx
+books/**/*.epub
 
 # Secrets and sensitive
 *.key
