@@ -1,0 +1,70 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "huaweicloud": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "HuaweiCloud-MaaS",
+      "options": {
+        "baseURL": "https://api.modelarts-maas.com/v2",
+        "apiKey": "G-Iku0P1gJrASlIonIpxwGzTTVnz-uYiKrWyj1DK76Ef7pG8N6OtRiBgnE8p4cyUYqd1KKRTUuGKA2x6qDrR8w"
+      },
+      "models": {
+        "glm-5": {
+          "name": "glm-5",
+          "limit": {
+            "context": 198000,
+            "output": 65536
+          }
+        },
+        "deepseek-v3.2": {
+          "name": "deepseek-v3.2",
+          "limit": {
+            "context": 128000,
+            "output": 32768
+          }
+        }
+      }
+    },
+    "xunfei": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Chatxunfei",
+      "options": {
+        "baseURL": "https://maas-api.cn-huabei-1.xf-yun.com/v2",
+        "apiKey": "fd4a187c1538fc4251e85e7476ad4103:NzFmMzdlZjgyNjQ1ZmU5MzczY2U4M2Zk"
+      },
+      "models": {
+        "xminimaxm25": {
+          "name": "xminimaxm25",
+          "limit": {
+            "context": 128000,
+            "output": 65536
+          }
+        },
+        "xopkimik25": {
+          "name": "xopkimik25",
+          "limit": {
+            "context": 128000,
+            "output": 65536
+          }
+        }
+      }
+    },
+    "siliconflow": {
+      "npm": "@ai-sdk/openai",
+      "name": "siliconflow",
+      "options": {
+        "baseURL": "https://api.siliconflow.cn/v1/",
+        "apiKey": "sk-dllfyouxputzhdkhfnumbeedysgclbkdpjfkulrnheltghij"
+      },
+      "models": {
+        "DeepSeek-V4-Flash": {
+          "name": "deepseek-ai/DeepSeek-V4-Flash",
+          "limit": {
+            "context": 1000000,
+            "output": 65536
+          }
+        }
+      }
+    }
+  }
+}

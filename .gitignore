@@ -1,0 +1,55 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+htmlcov/
+.coverage
+.pytest_cache/
+.mypy_cache/
+
+# Virtual Environment
+CIFenv/
+venv/
+env/
+.venv/
+
+# Environment
+.env
+.local/
+
+# Data and Logs
+data/chroma/
+logs/
+*.log
+*.sqlite*
+
+# Books (source documents - keep in repo for project completeness)
+# books/
+
+# Secrets and sensitive
+*.key
+*.pem
+*.cert
+*.p12
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Build artifacts
+dist/
+build/
+*.egg
+
+# Temporary
+tmp/
+temp/
+
+# OS generated
+Thumbs.db
