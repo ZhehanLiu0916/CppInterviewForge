@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C++面试Agent</title>
+    <style>
+        /* 主布局 */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+            color: #333;
+        }
+        
+        /* 头部 */
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        header h1 {
+            color: #2196F3;
+            margin-bottom: 10px;
+        }
+        header p {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        /* 卡片 */
+        .card {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        /* 表单元素 */
+        textarea, select, input, button {
+            font-family: inherit;
+            font-size: 14px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 100%;
+            margin: 10px 0;
+        }
+        button {
+            background: #2196F3;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        button:hover { background: #1976D2; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        
+        /* 结果区域 */
+        .result-section { margin-top: 20px; }
+        .result-box {
+            background: #f9f9f9;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+            white-space: pre-wrap;
+            font-size: 14px;
+            line-height: 1.6;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        /* 加载状态 */
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        .loading::after {
+            content: '';
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid #2196F3;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 8px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        /* 折叠面板 */
+        details {
+            border: 1px solid #eee;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            background: #fff;
+        }
+        summary {
+            cursor: pointer;
+            font-weight: bold;
+            color: #2196F3;
+            padding: 5px;
+        }
+        summary:hover { background: #f5f5f5; }
+        
+        /* 报告模块 */
+        .report-module { margin: 15px 0; }
+        .report-module h3 {
+            color: #333;
+            font-size: 16px;
+            margin: 10px 0;
+            border-bottom: 2px solid #2196F3;
+            padding-bottom: 5px;
+        }
+        .report-module table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+        .report-module th, .report-module td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+            font-size: 13px;
+        }
+        .report-module th { background: #f5f5f5; }
+        
+        /* 错误显示 */
+        .error-message {
+            background: #ffebee;
+            border: 1px solid #f44336;
+            color: #d32f2f;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+        
+        /* API状态 */
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        .status-healthy { background: #4CAF50; }
+        .status-degraded { background: #FFC107; }
+        .status-unknown { background: #9E9E9E; }
+        
+        /* 响应式 */
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            .card { padding: 15px; }
+        }
+        
+        /* 来源标记 */
+        .source-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            margin: 5px 0;
+        }
+        .source-knowledge { background: #E8F5E9; color: #2E7D32; }
+        .source-online { background: #E3F2FD; color: #1565C0; }
+        .source-ai { background: #FCE4EC; color: #C2185B; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>C++面试Agent</h1>
+        <p>帮助校招应届生系统性掌握C++面试知识点</p>
+    </header>
+    
+    <main>
+        <!-- 提问区 -->
+        <section id="ask-section" class="card">
+            <h2>提问区</h2>
+            <textarea id="question-input" rows="3" placeholder="输入C++面试问题，如：C++中虚函数表的存储位置在哪里？"></textarea>
+            <div>
+                <select id="answer-type">
+                    <option value="both">简答+详答</option>
+                    <option value="short">仅简答</option>
+                    <option value="detailed">仅详答</option>
+                </select>
+                <button id="ask-submit">提交问题</button>
+            </div>
+            <div id="ask-loading" style="display:none;">加载中...</div>
+            <div id="ask-error" class="error-message" style="display:none;"></div>
+            <div id="ask-result" class="result-section"></div>
+        </section>
+        
+        <!-- 复盘区 -->
+        <section id="review-section" class="card">
+            <h2>复盘区</h2>
+            <textarea id="transcript-input" rows="6" placeholder="粘贴面试录音转写文本（50-50000字）..."></textarea>
+            <button id="review-submit">提交复盘</button>
+            <div id="review-loading" style="display:none;">加载中...（可能需要60秒）</div>
+            <div id="review-error" class="error-message" style="display:none;"></div>
+            <div id="review-result" class="result-section"></div>
+        </section>
+        
+        <!-- API状态区 -->
+        <section id="status-section" class="card">
+            <h2>API状态</h2>
+            <div id="status-display">
+                <div><span class="status-indicator" id="status-llm"></span> LLM: <span id="llm-status">检测中...</span></div>
+                <div><span class="status-indicator" id="status-chroma"></span> Chroma: <span id="chroma-status">检测中...</span></div>
+                <div><span class="status-indicator" id="status-embedding"></span> Embedding: <span id="embedding-status">检测中...</span></div>
+                <div>整体状态: <strong id="overall-status">检测中...</strong></div>
+            </div>
+        </section>
+    </main>
+    
+    <footer style="text-align:center; margin-top:30px; color:#666; font-size:12px;">
+        C++面试Agent v1.0.0 | 基于LangGraph + LangChain
+    </footer>
+    
+    <script>
+        const BASE_URL = window.location.origin;
+        
+        // 初始化：检查API状态
+        checkApiStatus();
+        
+        // 提问区
+        document.getElementById('ask-submit').addEventListener('click', submitQuestion);
+        document.getElementById('question-input').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.ctrlKey) submitQuestion();
+        });
+        
+        // 复盘区
+        document.getElementById('review-submit').addEventListener('click', submitReview);
+        
+        async function checkApiStatus() {
+            try {
+                const response = await fetch(`${BASE_URL}/api/v1/health`);
+                const data = await response.json();
+                updateStatus('llm', data.components.llm);
+                updateStatus('chroma', data.components.chroma);
+                updateStatus('embedding', data.components.embedding);
+                document.getElementById('overall-status').textContent = data.status;
+                document.getElementById('overall-status').style.color = 
+                    data.status === 'healthy' ? '#4CAF50' : '#FFC107';
+            } catch (e) {
+                document.getElementById('overall-status').textContent = '无法连接';
+                document.getElementById('overall-status').style.color = '#F44336';
+            }
+        }
+        
+        function updateStatus(component, status) {
+            const el = document.getElementById(`status-${component}`);
+            const indicator = document.getElementById(`status-${component}`).previousElementSibling;
+            el.textContent = status;
+            indicator.className = 'status-indicator ' + 
+                (status === 'connected' || status === 'loaded' ? 'status-healthy' : 'status-degraded');
+        }
+        
+        async function submitQuestion() {
+            const question = document.getElementById('question-input').value.trim();
+            const answerType = document.getElementById('answer-type').value;
+            const resultDiv = document.getElementById('ask-result');
+            const errorDiv = document.getElementById('ask-error');
+            const loadingDiv = document.getElementById('ask-loading');
+            const submitBtn = document.getElementById('ask-submit');
+            
+            // 输入验证
+            if (!question) {
+                showError(errorDiv, '请输入面试问题');
+                return;
+            }
+            
+            // 显示加载状态
+            loadingDiv.style.display = 'block';
+            resultDiv.innerHTML = '';
+            errorDiv.style.display = 'none';
+            submitBtn.disabled = true;
+            
+            try {
+                const response = await fetch(`${BASE_URL}/api/v1/ask`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({question, answer_type: answerType})
+                });
+                
+                const data = await response.json();
+                
+                if (data.code !== 0) {
+                    showError(errorDiv, `错误 ${data.code}: ${data.message}`);
+                    return;
+                }
+                
+                displayAskResult(data.data);
+            } catch (e) {
+                showError(errorDiv, '网络错误，请稍后重试');
+            } finally {
+                loadingDiv.style.display = 'none';
+                submitBtn.disabled = false;
+            }
+        }
+        
+        function displayAskResult(data) {
+            const resultDiv = document.getElementById('ask-result');
+            let html = '';
+            const source = data.source || {};
+            
+            // 简答
+            if (data.short_answer) {
+                const sa = data.short_answer;
+                html += `<div class="report-module">`;
+                html += `<h3>简要回答 (${sa.word_count}字)</h3>`;
+                html += `<div class="result-box">${escapeHtml(sa.content)}</div>`;
+                html += `<div class="source-tag source-${getSourceClass(source.type)}">`;
+                html += `来源: ${getSourceText(source)}</div>`;
+                html += `</div>`;
+            }
+            
+            // 详答
+            if (data.detailed_answer) {
+                const da = data.detailed_answer;
+                html += `<div class="report-module">`;
+                html += `<h3>详细回答</h3>`;
+                if (da.knowledge_positioning) {
+                    html += `<details open><summary>📍 知识点定位</summary>`;
+                    html += `<div class="result-box">${escapeHtml(da.knowledge_positioning)}</div></details>`;
+                }
+                if (da.core_principle) {
+                    html += `<details open><summary>🔍 核心原理拆解</summary>`;
+                    html += `<div class="result-box">${escapeHtml(da.core_principle)}</div></details>`;
+                }
+                if (da.common_exams) {
+                    html += `<details open><summary>📝 常见考法说明</summary>`;
+                    html += `<div class="result-box">${escapeHtml(da.common_exams)}</div></details>`;
+                }
+                if (da.pitfalls) {
+                    html += `<details open><summary>⚠️ 易错点提示</summary>`;
+                    html += `<div class="result-box">${escapeHtml(da.pitfalls)}</div></details>`;
+                }
+                html += `<div class="source-tag source-${getSourceClass(source.type)}">`;
+                html += `来源: ${getSourceText(source)}</div>`;
+                html += `</div>`;
+            }
+            
+            resultDiv.innerHTML = html;
+        }
+        
+        async function submitReview() {
+            const transcript = document.getElementById('transcript-input').value.trim();
+            const resultDiv = document.getElementById('review-result');
+            const errorDiv = document.getElementById('review-error');
+            const loadingDiv = document.getElementById('review-loading');
+            const submitBtn = document.getElementById('review-submit');
+            
+            // 输入验证
+            if (!transcript || transcript.length < 50) {
+                showError(errorDiv, '转写文本至少50字');
+                return;
+            }
+            
+            // 显示加载状态
+            loadingDiv.style.display = 'block';
+            resultDiv.innerHTML = '';
+            errorDiv.style.display = 'none';
+            submitBtn.disabled = true;
+            
+            try {
+                const response = await fetch(`${BASE_URL}/api/v1/review`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({transcript})
+                });
+                
+                const data = await response.json();
+                
+                if (data.code !== 0) {
+                    showError(errorDiv, `错误 ${data.code}: ${data.message}`);
+                    return;
+                }
+                
+                displayReviewResult(data.data.report);
+            } catch (e) {
+                showError(errorDiv, '网络错误，请稍后重试');
+            } finally {
+                loadingDiv.style.display = 'none';
+                submitBtn.disabled = false;
+            }
+        }
+        
+        function displayReviewResult(report) {
+            if (!report) return;
+            const resultDiv = document.getElementById('review-result');
+            let html = '';
+            
+            // 模块1：问题汇总
+            if (report.questions_summary) {
+                html += `<div class="report-module">`;
+                html += `<h3>📋 面试问题汇总（共${report.questions_summary.total_count}题）</h3>`;
+                report.questions_summary.questions.forEach(q => {
+                    html += `<details><summary>Q${q.id}: ${escapeHtml(q.text)}</summary>`;
+                    if (q.sub_questions && q.sub_questions.length > 0) {
+                        q.sub_questions.forEach(sub => {
+                            html += `<div style="margin-left:20px; color:#666;">↳ ${escapeHtml(sub)}</div>`;
+                        });
+                    }
+                    html += `</details>`;
+                });
+                html += `</div>`;
+            }
+            
+            // 模块2：参考答案（简要）
+            if (report.reference_answers) {
+                html += `<div class="report-module">`;
+                html += `<h3>📚 各问题参考答案</h3>`;
+                report.reference_answers.forEach(ra => {
+                    html += `<details><summary>Q${ra.question_id}: ${escapeHtml(ra.question_text || '')}</summary>`;
+                    if (ra.short_answer) {
+                        html += `<div class="result-box"><strong>简答(${ra.short_answer.word_count}字):</strong><br>${escapeHtml(ra.short_answer.content)}</div>`;
+                    }
+                    if (ra.source) {
+                        html += `<div class="source-tag source-${getSourceClass(ra.source.type)}">来源: ${getSourceText(ra.source)}</div>`;
+                    }
+                    html += `</details>`;
+                });
+                html += `</div>`;
+            }
+            
+            // 模块3：回答评估
+            if (report.answer_evaluations) {
+                html += `<div class="report-module">`;
+                html += `<h3>📊 各问题回答评估</h3>`;
+                report.answer_evaluations.forEach(ev => {
+                    html += `<details><summary>Q${ev.question_id}: ${escapeHtml(ev.question_text || '')} (${ev.overall_score || 0}/5)</summary>`;
+                    html += `<div class="result-box">`;
+                    html += `<strong>面试者回答摘要:</strong> ${escapeHtml(ev.interviewee_summary || '')}<br>`;
+                    if (ev.scores) {
+                        html += `<table>`;
+                        html += `<tr><th>维度</th><th>评分</th><th>不足之处</th><th>优化建议</th></tr>`;
+                        ['accuracy', 'completeness', 'logic', 'terminology', 'relevance'].forEach(key => {
+                            const s = ev.scores[key] || {};
+                            const labels = {accuracy:'准确性', completeness:'完整性', logic:'逻辑性', terminology:'专业术语', relevance:'匹配度'};
+                            html += `<tr>`;
+                            html += `<td>${labels[key]}</td>`;
+                            html += `<td>${s.score || 0}/5</td>`;
+                            html += `<td>${(s.issues || []).map(i => `<div>• ${escapeHtml(i)}</div>`).join('')}</td>`;
+                            html += `<td>${(s.suggestions || []).map(s => `<div>• ${escapeHtml(s)}</div>`).join('')}</td>`;
+                            html += `</tr>`;
+                        });
+                        html += `</table>`;
+                    }
+                    html += `</div>`;
+                    html += `</details>`;
+                });
+                html += `</div>`;
+            }
+            
+            // 模块4：整体总结
+            if (report.overall_summary) {
+                const os = report.overall_summary;
+                html += `<div class="report-module">`;
+                html += `<h3>🎯 整体面试表现总结</h3>`;
+                html += `<div class="result-box">`;
+                html += `<p><strong>总体评分:</strong> ${os.total_score || 0}/5</p>`;
+                if (os.strengths) {
+                    html += `<p><strong>表现较好的方面:</strong></p><ul>`;
+                    os.strengths.forEach(s => html += `<li>${escapeHtml(s)}</li>`);
+                    html += `</ul>`;
+                }
+                if (os.weaknesses) {
+                    html += `<p><strong>需要重点提升的方面:</strong></p><ul>`;
+                    os.weaknesses.forEach(w => html += `<li>${escapeHtml(w)}</li>`;
+                    html += `</ul>`;
+                }
+                if (os.answer_style) {
+                    html += `<p><strong>回答风格特点:</strong> ${escapeHtml(os.answer_style)}</p>`;
+                }
+                html += `</div></div>`;
+            }
+            
+            // 模块5：提升建议
+            if (report.improvement_suggestions) {
+                const imp = report.improvement_suggestions;
+                html += `<div class="report-module">`;
+                html += `<h3>💡 提升建议</h3>`;
+                if (imp.priority_directions) {
+                    html += `<p><strong>优先补强方向:</strong></p>`;
+                    imp.priority_directions.forEach(d => {
+                        html += `<div class="result-box">`;
+                        html += `<p><strong>方向:</strong> ${escapeHtml(d.direction)}</p>`;
+                        if (d.topics) {
+                            html += `<p>知识点: ${(d.topics || []).map(t => `<code>${escapeHtml(t)}</code>`).join(', ')}</p>`;
+                        }
+                        if (d.reference) {
+                            html += `<p>参考: ${escapeHtml(d.reference)}</p>`;
+                        }
+                        html += `</div>`;
+                    });
+                }
+                if (imp.technique_improvements) {
+                    html += `<p><strong>回答技巧提升:</strong></p><ul>`;
+                    imp.technique_improvements.forEach(t => html += `<li>${escapeHtml(t)}</li>`);
+                    html += `</ul>`;
+                }
+                if (imp.recommended_questions) {
+                    html += `<p><strong>推荐练习题:</strong></p><ul>`;
+                    imp.recommended_questions.forEach(q => html += `<li>${escapeHtml(q)}</li>`);
+                    html += `</ul>`;
+                }
+                if (imp.learning_path) {
+                    html += `<p><strong>学习路径:</strong></p><ol>`;
+                    imp.learning_path.forEach(s => html += `<li>${escapeHtml(s)}</li>`);
+                    html += `</ol>`;
+                }
+                html += `</div>`;
+            }
+            
+            resultDiv.innerHTML = html;
+        }
+        
+        function getSourceClass(type) {
+            const map = {'knowledge_base': 'knowledge', 'online_search': 'online', 'ai_generated': 'ai'};
+            return map[type] || 'ai';
+        }
+        
+        function getSourceText(source) {
+            if (!source) return '';
+            let text = source.type === 'knowledge_base' ? '知识库' : 
+                        source.type === 'online_search' ? '在线搜索' : 'AI生成';
+            if (source.reference) {
+                text += ` (${source.reference})`;
+            }
+            if (source.similarity_score) {
+                text += ` 相似度: ${source.similarity_score.toFixed(3)}`;
+            }
+            return text;
+        }
+        
+        function showError(errorDiv, message) {
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            setTimeout(() => { errorDiv.style.display = 'none'; }, 5000);
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text || '';
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
