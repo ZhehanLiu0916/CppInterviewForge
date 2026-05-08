@@ -51,7 +51,7 @@ class RetrieverService:
 
         cache = get_cache()
         cache_key = (query, tuple(sorted(["semantic"])))
-        cached = cache.get(query, ("semantic",))
+        cached = await cache.get(query, ("semantic",))
         if cached:
             logger.debug(f"Cache hit for query: {query}")
             return cached
@@ -83,7 +83,7 @@ class RetrieverService:
             )
 
         items.sort(key=lambda x: x["similarity"], reverse=True)
-        cache.set(query, ("semantic",), items)
+        await cache.set(query, ("semantic",), items)
         return items
 
     async def search_by_keywords(

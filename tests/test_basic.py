@@ -75,6 +75,6 @@ def test_settings():
     """测试配置加载。"""
     from app.core.config import settings
 
-    assert settings.LLM_PROVIDER is not None
+    assert settings.LLM_API_KEY is not None
     assert settings.CHROMA_PERSIST_DIR is not None
     assert settings.EMBEDDING_MODEL is not None

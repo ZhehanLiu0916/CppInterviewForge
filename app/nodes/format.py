@@ -2,7 +2,7 @@ import re
 import logging
 from typing import Dict
 
-logger = logging.getLogger(__name__))
+logger = logging.getLogger(__name__)
 
 
 def _parse_detailed_answer(raw: str) -> Dict:

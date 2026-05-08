@@ -4,7 +4,12 @@ load_dotenv()
 
 import sys
 import logging as standard_logging
+import os
 from pathlib import Path
+
+hf_endpoint = os.getenv("HF_ENDPOINT")
+if hf_endpoint:
+    os.environ["HF_ENDPOINT"] = hf_endpoint
 
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
@@ -62,7 +67,7 @@ async def startup():
         logger.error(f"Failed to initialize retriever: {e}")
         app.state.retriever = None
 
-    logger.info(f"LLM Provider: {settings.LLM_PROVIDER}")
+    logger.info(f"LLM Model: {settings.LLM_MODEL_NAME}")
     logger.info(f"Books dir: {settings.BOOK_DIR}")
     logger.info("Startup complete")
 

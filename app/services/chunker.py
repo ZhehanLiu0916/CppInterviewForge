@@ -11,11 +11,16 @@ def split_by_headings(
     max_tokens: int = 800,
     min_tokens: int = 50,
 ) -> List[Dict[str, Any]]:
-    """按Markdown标题层级切分为知识块。"""
+    """按Markdown标题层级切分，无标题时按字数切分。"""
     lines = md_text.split("\n")
     chunks = []
     current_chunk = {"content": "", "heading_level": 0, "heading_text": "", "parent_heading": ""}
     parent_h2 = ""
+    has_headings = any(re.match(r"^(#{1,6})\s+(.+)$", line) for line in lines)
+
+    if not has_headings:
+        # 无标题结构，按字数切分
+        return _split_by_token_limit(md_text, max_tokens, min_tokens)
 
     for line in lines:
         heading_match = re.match(r"^(#{1,6})\s+(.+)$", line)
@@ -26,7 +31,9 @@ def split_by_headings(
 
             # 保存当前chunk
             if current_chunk["content"].strip():
-                chunks.append(_finalize_chunk(current_chunk, max_tokens, min_tokens))
+                result = _finalize_chunk(current_chunk, max_tokens, min_tokens)
+                if result is not None:
+                    chunks.append(result)
 
             # 更新chunk信息
             if level == 2:
@@ -52,7 +59,9 @@ def split_by_headings(
 
     # 保存最后一个chunk
     if current_chunk["content"].strip():
-        chunks.append(_finalize_chunk(current_chunk, max_tokens, min_tokens))
+        result = _finalize_chunk(current_chunk, max_tokens, min_tokens)
+        if result is not None:
+            chunks.append(result)
 
     logger.info(f"Split into {len(chunks)} chunks")
     return chunks
@@ -71,10 +80,9 @@ def _finalize_chunk(
         token_count = _estimate_tokens(content)
 
     # 过短合并（暂留，由调用方处理）
-    chunk_info["content"] = content
-    chunk_info["token_count"] = token_count
-    del chunk_info["content"]  # 太大，放在content字段
-    # 注意：这里返回的是一个包含content的dict
+    if token_count < min_tokens:
+        return None
+
     return {
         "content": content,
         "metadata": {
@@ -84,6 +92,46 @@ def _finalize_chunk(
         },
         "token_count": token_count,
     }
+
+
+def _split_by_token_limit(
+    text: str,
+    max_tokens: int = 800,
+    min_tokens: int = 50,
+) -> List[Dict[str, Any]]:
+    """无标题时按字数切分为知识块。"""
+    paragraphs = text.split("\n\n")
+    chunks = []
+    current = ""
+    current_tokens = 0
+
+    for para in paragraphs:
+        para = para.strip()
+        if not para:
+            continue
+        para_tokens = _estimate_tokens(para)
+        if current_tokens + para_tokens > max_tokens and current_tokens >= min_tokens:
+            chunks.append({
+                "content": current.strip(),
+                "heading_level": 0,
+                "heading_text": "",
+                "parent_heading": "",
+            })
+            current = para + "\n\n"
+            current_tokens = para_tokens
+        else:
+            current += para + "\n\n"
+            current_tokens += para_tokens
+
+    if current.strip():
+        chunks.append({
+            "content": current.strip(),
+            "heading_level": 0,
+            "heading_text": "",
+            "parent_heading": "",
+        })
+
+    return chunks
 
 
 def _estimate_tokens(text: str) -> int:

@@ -1,11 +1,11 @@
 import json
-import logging`
-from langchain_core.messages import HumanMessage`
+import logging
+from langchain_core.messages import HumanMessage
 
-from app.core.prompts import EXTRACT_QUESTIONS_PROMPT`
-from app.services.llm import get_llm`
+from app.core.prompts import EXTRACT_QUESTIONS_PROMPT
+from app.services.llm import get_llm
 
-logger = logging.getLogger(__name__)`
+logger = logging.getLogger(__name__)
 
 
 async def extract_questions_node(state: dict) -> dict:

@@ -9,6 +9,13 @@ async def web_search_node(state: dict) -> dict:
     """在线搜索节点。"""
     rewritten_query = state.get("rewritten_query", state.get("question", ""))
     keywords = state.get("keywords", [])
+    
+    # 添加日志检查上游节点是否正确设置了字段
+    logger.info(f"Web search node - rewritten_query: '{rewritten_query}', "
+                f"question: '{state.get('question', '')}', "
+                f"rewritten_query exists: {'rewritten_query' in state}, "
+                f"question exists: {'question' in state}, "
+                f"state keys: {list(state.keys())}")
 
     try:
         result = await web_search(

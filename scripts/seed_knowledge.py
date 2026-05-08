@@ -64,17 +64,15 @@ async def main():
 
     # 转换文件
     logger.info("Converting files to Markdown...")
-    converted = batch_convert(files)
+    converted = await batch_convert(files)
     logger.info(f"Converted {len(converted)} documents")
 
     # 切分
     logger.info("Chunking documents...")
     all_chunks = []
     for doc in converted:
-        chunks = split_by_headings(
-            doc["content"], doc["source"], doc["file_type"]
-        )
-        # 添加source到metadata
+        chunks = split_by_headings(doc["content"])
+        # 添加source到chunk
         for chunk in chunks:
             chunk["source"] = doc["source"]
             chunk["file_type"] = doc["file_type"]
@@ -96,27 +94,46 @@ async def main():
         if not content.strip():
             continue
 
-        # 计算ID（基于source+heading防止重复）
+        # 计算ID（基于source+heading+内容hash防止重复）
         source = chunk.get("source", "")
         heading = chunk.get("metadata", {}).get("heading_text", "")
-        chunk_id = hashlib.md5(f"{source}:{heading}".encode()).hexdigest()
+        content_sample = content[:200]
+        chunk_id = hashlib.md5(f"{source}:{heading}:{content_sample}".encode()).hexdigest()
 
         metadata = chunk.get("metadata", {})
-        metadata.update(chunk.get("classification", {}))
+        # 清洗 metadata：ChromaDB 不允许空列表值
+        metadata = {k: v for k, v in metadata.items() if not (isinstance(v, list) and len(v) == 0)}
+        # classification 已合并到 metadata 中，无需再 update
 
         ids.append(chunk_id)
         documents.append(content)
         metadatas.append(metadata)
 
+    # 入库前去重（保证ID唯一）
+    seen_ids = {}
+    unique_ids = []
+    unique_documents = []
+    unique_metadatas = []
+    for i, chunk_id in enumerate(ids):
+        if chunk_id in seen_ids:
+            # 重复ID，加后缀重新生成
+            new_id = hashlib.md5(f"{chunk_id}_{seen_ids[chunk_id]}".encode()).hexdigest()
+            seen_ids[chunk_id] += 1
+            unique_ids.append(new_id)
+        else:
+            seen_ids[chunk_id] = 1
+            unique_ids.append(chunk_id)
+        unique_documents.append(documents[i])
+        unique_metadatas.append(metadatas[i])
+
     # 入库
-    logger.info(f"Adding {len(ids)} chunks to Chroma...")
+    logger.info(f"Adding {len(unique_ids)} chunks to Chroma...")
     try:
         if args.rebuild:
             logger.info("Rebuild mode: clearing old data...")
-            # Chroma不支持直接清空，需删除collection重建
-            # 此处简化处理：直接添加（会去重）
-        await retriever.add_documents(ids, documents, metadatas)
-        logger.info("Done! Total chunks in DB: {retriever.count()}")
+            # Chroma 不支持直接清空，需删除collection重建
+        await retriever.add_documents(unique_ids, unique_documents, unique_metadatas)
+        logger.info(f"Done! Total chunks in DB: {retriever.count()}")
     except Exception as e:
         logger.error(f"Failed to add documents: {e}")
         raise

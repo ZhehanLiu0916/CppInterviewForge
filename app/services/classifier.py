@@ -13,8 +13,9 @@ logger = logging.getLogger(__name__)
 async def classify_chunk(chunk: Dict[str, Any]) -> Dict[str, Any]:
     """对单个知识块进行分类标注。"""
     content = chunk.get("content", "")
-    heading_text = chunk.get("heading_text", "")
-    parent_heading = chunk.get("parent_heading", "")
+    metadata = chunk.get("metadata", {})
+    heading_text = metadata.get("heading_text", "")
+    parent_heading = metadata.get("parent_heading", "")
 
     llm = get_llm(temperature=0.0, max_tokens=256)
     prompt = CLASSIFY_PROMPT.format(

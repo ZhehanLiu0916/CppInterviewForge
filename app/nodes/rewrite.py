@@ -20,7 +20,13 @@ async def rewrite_node(state: dict) -> dict:
 
     try:
         response = await llm.ainvoke([HumanMessage(content=prompt)])
-        result = json.loads(response.content)
+        content = response.content.strip()
+        # 去除可能的 markdown 代码块包裹
+        if content.startswith("```"):
+            content = content.strip("`").strip()
+            if content.startswith("json"):
+                content = content[4:].strip()
+        result = json.loads(content)
         keywords = result.get("keywords", [])
         rewritten_query = result.get("rewritten_query", question)
         logger.debug(f"Rewrite: '{question}' -> '{rewritten_query}', keywords={keywords}")

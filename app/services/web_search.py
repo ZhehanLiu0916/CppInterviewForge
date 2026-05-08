@@ -34,6 +34,14 @@ async def tavily_search(
             response.raise_for_status()
             data = response.json()
             return data
+    except httpx.HTTPStatusError as e:
+        # 输出Tavily返回的详细错误信息
+        try:
+            error_detail = e.response.json()
+            logger.error(f"Tavily search failed: HTTP {e.response.status_code} - {error_detail}")
+        except Exception:
+            logger.error(f"Tavily search failed: HTTP {e.response.status_code} - {e.response.text}")
+        return {"results": []}
     except Exception as e:
         logger.error(f"Tavily search failed: {e}")
         return {"results": []}
@@ -44,6 +52,7 @@ async def searxng_search(
     max_results: int = 5,
     searxng_url: str = "http://localhost:8080",
     timeout: int = 5,
+    max_chars_per_result: int = 2000,
 ) -> Dict:
     """调用SearXNG自建实例（降级方案）。"""
     try:

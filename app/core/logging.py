@@ -30,13 +30,19 @@ logger.add(
 
 def setup_logging():
     """初始化日志（兼容FastAPI）。"""
-    # loguru已配置，返回兼容WSGI的logger
     import logging as standard_logging
 
     class InterceptHandler(standard_logging.Handler):
         def emit(self, record):
-            logger_opt, logger_name, level, _, _ = logger._runtime._start, record.name, record.levelno, record.msg
-            logger_opt(logger_name, level, record.getMessage())
+            try:
+                level = logger.level(record.levelname).name
+            except ValueError:
+                level = record.levelno
+            frame, depth = standard_logging.currentframe(), 2
+            while frame and frame.f_code.co_filename == standard_logging.__file__:
+                frame = frame.f_back
+                depth += 1
+            logger.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
 
     standard_logging.basicConfig(handlers=[InterceptHandler()], level=0)
     return logger

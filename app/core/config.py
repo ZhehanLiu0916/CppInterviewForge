@@ -3,19 +3,12 @@ from typing import Optional
 
 
 class Settings:
-    # LLM配置
-    LLM_PROVIDER: str = os.getenv("LLM_PROVIDER", "deepseek")
+    # LLM配置（硅基流动）
     LLM_API_KEY: str = os.getenv("LLM_API_KEY", "")
-    LLM_MODEL_NAME: str = os.getenv("LLM_MODEL_NAME", "deepseek-chat")
-    LLM_BASE_URL: Optional[str] = os.getenv("LLM_BASE_URL", "https://api.deepseek.com/v1")
+    LLM_MODEL_NAME: str = os.getenv("LLM_MODEL_NAME", "deepseek-ai/DeepSeek-V4-Flash")
+    LLM_BASE_URL: Optional[str] = os.getenv("LLM_BASE_URL", "https://api.siliconflow.cn/v1/")
     LLM_TEMPERATURE: float = float(os.getenv("LLM_TEMPERATURE", "0.3"))
     LLM_MAX_TOKENS: int = int(os.getenv("LLM_MAX_TOKENS", "2048"))
-
-    # 备选模型配置
-    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
-    OPENAI_MODEL_NAME: str = os.getenv("OPENAI_MODEL_NAME", "gpt-4o-mini")
-    QWEN_API_KEY: str = os.getenv("QWEN_API_KEY", "")
-    QWEN_MODEL_NAME: str = os.getenv("QWEN_MODEL_NAME", "qwen-plus")
 
     # Chroma配置
     CHROMA_PERSIST_DIR: str = os.getenv("CHROMA_PERSIST_DIR", "./data/chroma")
@@ -26,7 +19,7 @@ class Settings:
     EMBEDDING_DEVICE: str = os.getenv("EMBEDDING_DEVICE", "cpu")
 
     # 检索配置
-    RETRIEVAL_THRESHOLD: float = float(os.getenv("RETRIEVAL_THRESHOLD", "0.8"))
+    RETRIEVAL_THRESHOLD: float = float(os.getenv("RETRIEVAL_THRESHOLD", "0.6"))
     RETRIEVAL_TOP_K: int = int(os.getenv("RETRIEVAL_TOP_K", "5"))
 
     # 在线搜索配置
