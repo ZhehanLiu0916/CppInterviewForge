@@ -23,11 +23,13 @@ env/
 # Data and Logs
 data/chroma/
 logs/
+log/
 *.log
 *.sqlite*
 
 # Books (source documents)
 # Keep directory structure, but ignore large binary files
+books/**
 books/**/*.pdf
 books/**/*.docx
 books/**/*.pptx
