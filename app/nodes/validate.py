@@ -1,4 +1,3 @@
-import json
 import logging
 from datetime import datetime, timedelta
 from langchain_core.messages import HumanMessage
@@ -6,6 +5,7 @@ from langchain_core.messages import HumanMessage
 from app.core.config import settings
 from app.services.llm import get_validator_llm
 from app.core.prompts import VALIDATE_ACCURACY_PROMPT
+from app.utils.text import extract_json
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +41,7 @@ async def validate_node(state: dict) -> dict:
 
     try:
         response = await llm.ainvoke([HumanMessage(content=prompt)])
-        result = json.loads(response.content)
+        result = extract_json(response.content)
         is_accurate = result.get("is_accurate", False)
 
         if is_accurate:
@@ -59,7 +59,7 @@ async def validate_node(state: dict) -> dict:
                 "knowledge_base_content": None,
                 "knowledge_base_metadata": None,
             }
-    except json.JSONDecodeError as e:
+    except ValueError as e:
         logger.warning(f"Validate node JSON parse failed: {e}, treating as passed")
         return {
             "validation_passed": True,

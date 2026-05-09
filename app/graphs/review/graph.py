@@ -29,12 +29,12 @@ def _build_review_graph() -> StateGraph:
     # 设置入口
     graph.set_entry_point("preprocess")
 
-    # 并行：preprocess后同时启动问题提取和回答提取
+    # 串行：先提取问题，再基于问题提取回答
     graph.add_edge("preprocess", "extract_questions")
-    graph.add_edge("preprocess", "extract_answers")
+    graph.add_edge("extract_questions", "extract_answers")
 
-    # 两个提取完成后，启动answer_questions
-    graph.add_edge(["extract_questions", "extract_answers"], "answer_questions")
+    # 回答提取完成后，启动answer_questions
+    graph.add_edge("extract_answers", "answer_questions")
 
     # 回答问题后评估
     graph.add_edge("answer_questions", "evaluate")

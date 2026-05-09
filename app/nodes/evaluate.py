@@ -1,4 +1,3 @@
-import json
 import logging
 from typing import List, Dict
 
@@ -6,6 +5,7 @@ from langchain_core.messages import HumanMessage
 
 from app.core.prompts import EVALUATE_ANSWER_PROMPT
 from app.services.llm import get_llm
+from app.utils.text import extract_json
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +42,7 @@ async def evaluate_node(state: dict) -> dict:
 
         try:
             response = await llm.ainvoke([HumanMessage(content=prompt)])
-            result = json.loads(response.content)
+            result = extract_json(response.content)
 
             # 计算综合评分
             scores = result
@@ -57,7 +57,7 @@ async def evaluate_node(state: dict) -> dict:
                     "overall_score": overall,
                 }
             )
-        except json.JSONDecodeError as e:
+        except ValueError as e:
             logger.warning(f"Evaluate JSON parse failed for Q{qid}: {e}")
             evaluations.append(_fallback_evaluation(qid, q_text, interviewee_text))
         except Exception as e:

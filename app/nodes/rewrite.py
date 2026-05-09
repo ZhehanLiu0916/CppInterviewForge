@@ -1,10 +1,10 @@
-import json
 import logging
 from langchain_core.messages import HumanMessage
 
 from app.core.config import settings
 from app.services.llm import get_llm
 from app.core.prompts import REWRITE_PROMPT
+from app.utils.text import extract_json
 
 logger = logging.getLogger(__name__)
 
@@ -20,13 +20,7 @@ async def rewrite_node(state: dict) -> dict:
 
     try:
         response = await llm.ainvoke([HumanMessage(content=prompt)])
-        content = response.content.strip()
-        # 去除可能的 markdown 代码块包裹
-        if content.startswith("```"):
-            content = content.strip("`").strip()
-            if content.startswith("json"):
-                content = content[4:].strip()
-        result = json.loads(content)
+        result = extract_json(response.content)
         keywords = result.get("keywords", [])
         rewritten_query = result.get("rewritten_query", question)
         logger.debug(f"Rewrite: '{question}' -> '{rewritten_query}', keywords={keywords}")
@@ -34,7 +28,7 @@ async def rewrite_node(state: dict) -> dict:
             "rewritten_query": rewritten_query,
             "keywords": keywords,
         }
-    except json.JSONDecodeError as e:
+    except ValueError as e:
         logger.warning(f"Rewrite node JSON parse failed: {e}, using original")
         return {"rewritten_query": question, "keywords": []}
     except Exception as e:

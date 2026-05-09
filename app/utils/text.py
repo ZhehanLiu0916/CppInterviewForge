@@ -1,4 +1,32 @@
+import json
 import re
+
+
+def extract_json(text: str) -> dict | list:
+    """从LLM输出中提取JSON，兼容markdown代码块包裹的情况。"""
+    text = text.strip()
+    # 尝试直接解析
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
+    # 尝试提取```json ... ```代码块
+    match = re.search(r"```(?:json)?\s*\n?(.*?)\n?\s*```", text, re.DOTALL)
+    if match:
+        return json.loads(match.group(1).strip())
+    # 尝试找到第一个 { 和最后一个 } 之间的内容
+    start = text.find("{")
+    if start != -1:
+        end = text.rfind("}")
+        if end > start:
+            return json.loads(text[start : end + 1])
+    # 尝试找到 [ ... ]
+    start = text.find("[")
+    if start != -1:
+        end = text.rfind("]")
+        if end > start:
+            return json.loads(text[start : end + 1])
+    raise json.JSONDecodeError("No JSON found in LLM output", text, 0)
 
 
 def count_chinese_words(text: str) -> int:

@@ -28,6 +28,8 @@ class QuestionState(dict):
 
     # generate节点输出
     short_answer: str = ""
+    short_answer_word_count: int = 0
+    detailed_answer_raw: str = ""
     detailed_answer: Dict = {}
     source_info: Dict = {}
 

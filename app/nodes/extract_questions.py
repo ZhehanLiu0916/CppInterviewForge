@@ -1,9 +1,9 @@
-import json
 import logging
 from langchain_core.messages import HumanMessage
 
 from app.core.prompts import EXTRACT_QUESTIONS_PROMPT
 from app.services.llm import get_llm
+from app.utils.text import extract_json
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +19,7 @@ async def extract_questions_node(state: dict) -> dict:
 
     try:
         response = await llm.ainvoke([HumanMessage(content=prompt)])
-        result = json.loads(response.content)
+        result = extract_json(response.content)
         questions = result.get("questions", [])
         
         # 异常3：问题提取结果为0
@@ -36,7 +36,7 @@ async def extract_questions_node(state: dict) -> dict:
         
         logger.info(f"Extracted {len(questions)} questions")
         return {"questions": questions}
-    except json.JSONDecodeError as e:
+    except ValueError as e:
         logger.error(f"Extract questions JSON parse failed: {e}")
         return {"questions": [], "error": "问题提取解析失败", "error_code": 1004}
     except TimeoutError:

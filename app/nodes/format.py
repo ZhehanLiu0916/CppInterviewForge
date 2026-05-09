@@ -6,7 +6,7 @@ logger = logging.getLogger(__name__)
 
 
 def _parse_detailed_answer(raw: str) -> Dict:
-    """解析LLM生成的详细回答，提取4段结构。"""
+    """解析LLM生成的详细回答，提取4段结构。兼容emoji标记和纯文本标题。"""
     sections = {
         "knowledge_positioning": "",
         "core_principle": "",
@@ -14,26 +14,39 @@ def _parse_detailed_answer(raw: str) -> Dict:
         "pitfalls": "",
     }
 
-    # 正则提取4个段落
-    patterns = {
-        "knowledge_positioning": r"📍\s*知识点定位[：:]\s*(.*?)(?=🔍|📝|⚠️|$)",
-        "core_principle": r"🔍\s*核心原理拆解[：:]\s*(.*?)(?=📍|📝|⚠️|$)",
-        "common_exams": r"📝\s*常见考法说明[：:]\s*(.*?)(?=📍|🔍|⚠️|$)",
-        "pitfalls": r"⚠️\s*易错点提示[：:]\s*(.*?)(?=📍|🔍|📝|$)",
-    }
+    # 每段的关键文本标识（不含emoji），按原文预期顺序
+    markers = [
+        ("knowledge_positioning", "知识点定位"),
+        ("core_principle", "核心原理拆解"),
+        ("common_exams", "常见考法说明"),
+        ("pitfalls", "易错点提示"),
+    ]
 
-    for key, pattern in patterns.items():
-        match = re.search(pattern, raw, re.DOTALL)
-        if match:
-            sections[key] = match.group(1).strip()
+    # 找到各段落标题在原文中的位置
+    # 匹配: [可选emoji+空格+加粗标记] + 标题文本 + [可选冒号]
+    positions = []
+    for key, marker_text in markers:
+        pattern = r"(?:[📍🔍📝⚠️]\s*)?(?:\*\*)?\s*" + re.escape(marker_text) + r"\s*(?:\*\*)?\s*[：:]?"
+        for m in re.finditer(pattern, raw):
+            positions.append((m.start(), m.end(), key))
 
-    # 如果解析失败，将原始内容放入knowledge_positioning
-    if not any(sections.values()):
+    positions.sort()
+
+    if not positions:
         logger.warning("Failed to parse detailed answer, using raw content")
         sections["knowledge_positioning"] = raw[:500]
-        sections["core_principle"] = ""
-        sections["common_exams"] = ""
-        sections["pitfalls"] = ""
+        return sections
+
+    # 按位置截取各段落内容
+    for i, (start, end, key) in enumerate(positions):
+        if i + 1 < len(positions):
+            content_end = positions[i + 1][0]
+        else:
+            content_end = len(raw)
+        content = raw[end:content_end].strip()
+        # 去掉开头的换行和多余空白
+        content = re.sub(r"^[\s\n]+", "", content)
+        sections[key] = content
 
     return sections
 

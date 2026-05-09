@@ -59,3 +59,10 @@ temp/
 
 # OS generated
 Thumbs.db
+
+*.out
+
+# Secrets
+opencode.json
+
+.claude/

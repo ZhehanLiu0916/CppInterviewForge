@@ -4,6 +4,7 @@ from langchain_core.messages import HumanMessage
 
 from app.core.prompts import EXTRACT_ANSWERS_PROMPT
 from app.services.llm import get_llm
+from app.utils.text import extract_json
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +27,7 @@ async def extract_answers_node(state: dict) -> dict:
 
     try:
         response = await llm.ainvoke([HumanMessage(content=prompt)])
-        result = json.loads(response.content)
+        result = extract_json(response.content)
         answers = result.get("answers", [])
         
         # 确保每个回答有question_id和answer_text
@@ -38,7 +39,7 @@ async def extract_answers_node(state: dict) -> dict:
         
         logger.info(f"Extracted {len(answers)} answers")
         return {"interviewee_answers": answers}
-    except json.JSONDecodeError as e:
+    except ValueError as e:
         logger.error(f"Extract answers JSON parse failed: {e}")
         return {"interviewee_answers": [], "error": "回答提取解析失败"}
     except TimeoutError:
