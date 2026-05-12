@@ -33,7 +33,10 @@ class QuestionState(dict):
     detailed_answer: Dict = {}
     source_info: Dict = {}
 
-    # format节点输出（已包含在generate中，format是generate的一部分）
+    # format节点输出
+    source: Dict = {}
+    metadata: Optional[Dict] = None
+
     # error记录
     error: Optional[str] = None
 

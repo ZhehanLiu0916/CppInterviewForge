@@ -280,9 +280,11 @@ CppInterviewForge/
 │   │   ├── retriever.py  # Chroma 向量检索
 │   │   ├── cache.py     # LRU 缓存
 │   │   ├── web_search.py # Tavily/SearXNG 搜索
-│   │   ├── chunker.py   # Markdown 文档切分
+│   │   ├── chunker.py   # Markdown 文档切分（支持重叠滑动窗口 + 语义分块）
 │   │   ├── classifier.py # LLM 自动分类标注
-│   │   └── document_loader.py  # 多格式文档加载
+│   │   ├── document_loader.py  # 多格式文档加载
+│   │   ├── pdf_parser.py  # 增强型 PDF 解析器（4 策略）
+│   │   └── noise_filter.py # 知识块噪声过滤器
 │   ├── utils/           # 工具函数
 │   │   └── text.py      # 字频统计、截断等
 │   └── main.py          # FastAPI 应用入口
@@ -318,10 +320,65 @@ source CIFenv/bin/activate
 python scripts/seed_knowledge.py --rebuild
 
 # 增量更新（仅处理新增文档）
-python scripts/seed_knowledge.py
+python scripts/seed_knowledge.py --incremental
+
+# 启用激进噪声过滤（额外丢弃目录/索引页）
+python scripts/seed_knowledge.py --rebuild --noise-strict
 ```
 
-入库流程：`books/` → MarkItDown 转 Markdown → 按标题切分 → LLM 自动分类 → 向量化写入 Chroma
+**入库流水线：**
+
+```
+books/ 下文档
+    ↓
+[文档转换] → MarkItDown（通用）+ PyMuPDF 增强解析（PDF 专属）
+    ↓
+[按标题分块] → ##/### 标题边界切分 / 无标题时 RecursiveCharacterTextSplitter + overlap=200
+    ↓
+[噪声过滤] → URL 密度检测 + 垃圾域名/短语 + 页眉页脚水印清洗 + 特殊字符比
+    ↓
+[LLM 自动分类] → C++核心语法 / STL标准库 / 操作系统 / 计算机网络 / 数据库 / 设计模式
+    ↓
+[向量化写入] → SentenceTransformer Embedding → ChromaDB
+```
+
+#### PDF 解析策略
+
+系统根据 PDF 特征自动选择最优解析策略：
+
+| 策略 | 适用场景 | 核心方法 |
+|------|---------|---------|
+| `structured` | 有字号层级/章节编号的传统 PDF | 字体大小 + 粗体 + 编号模式 → 重建 Markdown 标题 |
+| `qa_flat` | Q&A 平铺式面试题 PDF | 正则识别 `？`/`：` 问句边界，自动生成 `###` 标题 |
+| `mindmap` | 单页脑图/表格速查 PDF | 以粗体为首要信号（脑图中标题字号可能小于正文） |
+| `scanned` | 扫描版 PDF（文字提取为 0） | PaddleOCR → Tesseract → EasyOCR 三级回退 |
+
+#### 噪声过滤规则
+
+入库前自动过滤以下噪声 chunk，提升知识库纯度：
+
+- **URL 密度过高**：每 500 字中 URL 数量超过 1.5 个
+- **已知垃圾域名**：linuxidc.com、java1234.com 等 Z-Library 赞助页
+- **垃圾短语匹配**："版权所有""网址导航""侵权请联系""扫码关注"等
+- **页眉页脚水印**：自动清洗 "Linux公社 www.linuxidc.com" 等重复水印行
+- **特殊字符占比过高**：非中英文字符超过 50%
+- **广告页跳过**：PDF 解析阶段自动跳过广告/赞助商插入页
+
+### 安装 OCR 支持（处理扫描版 PDF）
+
+对于扫描版 PDF（如 Effective C++、深入理解Linux进程与内存），需安装 OCR 引擎：
+
+```bash
+# 推荐方案：PaddleOCR（中文识别最佳）
+pip install paddlepaddle paddleocr
+
+# 备选方案 A：Tesseract
+sudo apt install tesseract-ocr tesseract-ocr-chi-sim
+pip install pytesseract
+
+# 备选方案 B：EasyOCR
+pip install easyocr
+```
 
 ### 运行测试
 

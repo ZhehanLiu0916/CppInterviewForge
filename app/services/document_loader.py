@@ -1,3 +1,11 @@
+"""
+文档加载与格式转换。
+
+支持格式：.md, .pdf, .docx, .pptx, .html, .epub, .txt
+PDF 文件通过增强型 pdf_parser 处理（字体层级检测 / Q&A 识别 / OCR 回退），
+其他格式仍使用 MarkItDown。
+"""
+
 import os
 import logging
 from pathlib import Path
@@ -7,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 def scan_books_dir(book_dir: str) -> List[str]:
-    """递归扫描books目录，返回文件列表。"""
+    """递归扫描 books 目录，返回文件列表。"""
     if not os.path.exists(book_dir):
         logger.warning(f"Books dir not found: {book_dir}")
         return []
@@ -30,7 +38,7 @@ def scan_books_dir(book_dir: str) -> List[str]:
 
 
 def _convert_with_markitdown(file_path: str) -> str:
-    """使用MarkItDown转换文件为Markdown。"""
+    """使用 MarkItDown 将非 PDF 文件转为 Markdown。"""
     try:
         from markitdown import MarkItDown
 
@@ -42,8 +50,28 @@ def _convert_with_markitdown(file_path: str) -> str:
         return ""
 
 
+def _convert_pdf(file_path: str) -> Optional[Dict[str, Any]]:
+    """使用增强型 PDF 解析器处理 PDF 文件。"""
+    from app.services.pdf_parser import parse_pdf
+
+    result = parse_pdf(file_path)
+    if result is None:
+        # PDF 解析器失败，回退到 MarkItDown
+        logger.warning(f"Enhanced PDF parser failed for {file_path}, falling back to MarkItDown")
+        content = _convert_with_markitdown(file_path)
+        if not content:
+            return None
+        return {
+            "content": content,
+            "file_type": "pdf",
+            "source": file_path,
+            "strategy": "markitdown_fallback",
+        }
+    return result
+
+
 def convert_to_markdown(file_path: str) -> Optional[Dict[str, Any]]:
-    """转换单个文件为Markdown文本。"""
+    """转换单个文件为 Markdown 文本。PDF 走增强解析管线。"""
     ext = Path(file_path).suffix.lower()
 
     try:
@@ -56,7 +84,10 @@ def convert_to_markdown(file_path: str) -> Optional[Dict[str, Any]]:
                 "source": file_path,
             }
 
-        elif ext in (".pdf", ".docx", ".pptx", ".html", ".htm", ".epub"):
+        elif ext == ".pdf":
+            return _convert_pdf(file_path)
+
+        elif ext in (".docx", ".pptx", ".html", ".htm", ".epub"):
             content = _convert_with_markitdown(file_path)
             if not content:
                 return None
